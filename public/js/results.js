@@ -98,9 +98,17 @@
       source.close();
       return;
     }
-    setVisible(!!data.showResults);
-    if (data.showResults) paint(data.tally);
-    paintVerdict(data.showResults ? data.resolution : null);
+    // The stream carries no counts until the round resolves, so there is
+    // simply nothing to show before then.
+    setVisible(!!data.resolution);
+    paintVerdict(data.resolution);
+    if (data.resolution) {
+      paint({
+        silence: data.resolution.silence,
+        snitch: data.resolution.snitch,
+        total: data.resolution.total,
+      });
+    }
   };
 
   // EventSource reconnects on its own; nothing to do but stay quiet.

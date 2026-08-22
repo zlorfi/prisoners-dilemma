@@ -52,8 +52,13 @@ the schema and admin account are recreated automatically.
 ## How it works
 
 **Admin** (`/admin`) — create a dilemma, share the link or QR code, watch
-results stream in. You can close voting, reveal results to participants,
-reset votes, export a CSV, or delete the room.
+results stream in. You can close voting, reset votes, export a CSV, or delete
+the room.
+
+**Closing the voting resolves the card.** Participants see nothing at all
+while a round is running — no running totals, so nobody can time their choice
+against how others are voting. The moment you close it, everyone is shown the
+verdict, the final split, and the damage they personally took.
 
 **Participant** (`/d/<slug>`) — sees the briefing, an alias prefilled from a
 pool of ~240 pop-culture gangsters (editable, or reroll with ↻), and the two

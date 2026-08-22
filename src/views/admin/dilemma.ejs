@@ -72,8 +72,7 @@
   <section class="card <%= resolution ? 'is-hidden' : '' %>" id="pending-note">
     <p class="muted small flush">
       Damage resolves once you close the voting &mdash; that is the signal that
-      every opponent has chosen. Use <strong>Reveal results</strong> to show the
-      verdict to the players.
+      every opponent has chosen. The players see the verdict at the same moment.
     </p>
   </section>
 
@@ -142,14 +141,6 @@
         </button>
       </form>
 
-      <form method="post" action="/admin/dilemmas/<%= dilemma.id %>/results">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <input type="hidden" name="show" value="<%= dilemma.show_results ? '0' : '1' %>">
-        <button type="submit" class="btn">
-          <%= dilemma.show_results ? 'Hide results from voters' : 'Reveal results to voters' %>
-        </button>
-      </form>
-
       <form method="post" action="/admin/dilemmas/<%= dilemma.id %>/reset"
             data-confirm="Delete all votes for this dilemma? This cannot be undone.">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -163,8 +154,10 @@
       </form>
     </div>
     <p class="field__hint">
-      Voters see aggregate counts only, and only while &ldquo;reveal results&rdquo; is on.
-      The alias list above is never exposed to them.
+      Voters see nothing at all until you close the voting &mdash; no running
+      counts, so nobody can react to how others are choosing. Closing resolves
+      the card and shows each player the verdict and their own damage. The
+      alias list above is never exposed to them.
     </p>
   </section>
 </main>

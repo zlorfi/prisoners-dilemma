@@ -12,8 +12,12 @@
 
       <label class="field">
         <span class="field__label">Title</span>
-        <input type="text" name="title" maxlength="120" required
-               placeholder="Team offsite &mdash; round 1">
+        <input type="text" name="title" maxlength="120"
+               value="<%= suggestedTitle %>"
+               placeholder="<%= suggestedTitle %>">
+        <span class="field__hint">
+          Defaults to <strong><%= suggestedTitle %></strong> if you leave it empty.
+        </span>
       </label>
 
       <label class="field">

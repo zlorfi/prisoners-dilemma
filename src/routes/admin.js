@@ -88,6 +88,8 @@ router.get('/', (req, res) => {
     dilemmas: list,
     admin: req.admin,
     created: req.query.created || null,
+    // Prefilled into the form so the admin can just hit create.
+    suggestedTitle: dilemmas.nextDefaultTitle(),
   });
 });
 
@@ -148,11 +150,6 @@ router.post('/dilemmas/:id/status', loadDilemma, (req, res) => {
   res.redirect(`/admin/dilemmas/${req.dilemma.id}`);
 });
 
-router.post('/dilemmas/:id/results', loadDilemma, (req, res) => {
-  dilemmas.setShowResults(req.dilemma.id, req.body.show === '1');
-  res.redirect(`/admin/dilemmas/${req.dilemma.id}`);
-});
-
 router.post('/dilemmas/:id/reset', loadDilemma, (req, res) => {
   dilemmas.resetVotes(req.dilemma.id);
   res.redirect(`/admin/dilemmas/${req.dilemma.id}`);
@@ -205,7 +202,6 @@ router.get('/dilemmas/:id/stream', loadDilemma, (req, res) => {
   send({
     type: 'snapshot',
     status: req.dilemma.status,
-    showResults: !!req.dilemma.show_results,
     ...dilemmas.getSnapshot(req.dilemma.id),
   });
 

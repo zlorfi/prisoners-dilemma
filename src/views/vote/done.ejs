@@ -38,8 +38,9 @@
       </p>
     </div>
 
-    <div id="results" class="results <%= showResults ? '' : 'is-hidden' %>">
-      <h2 class="results__title">Where everyone landed</h2>
+    <%# Final split, only ever rendered once the round is resolved. %>
+    <div id="results" class="results <%= resolution ? '' : 'is-hidden' %>">
+      <h3 class="results__title">Where everyone landed</h3>
 
       <div class="bar">
         <div class="bar__seg bar__seg--silence" id="bar-silence"></div>
@@ -50,24 +51,24 @@
         <div class="tally__item">
           <span class="tally__dot tally__dot--silence"></span>
           <span class="tally__label">Silent</span>
-          <span class="tally__value" id="count-silence"><%= tally.silence %></span>
+          <span class="tally__value" id="count-silence"><%= resolution ? resolution.silence : 0 %></span>
         </div>
         <div class="tally__item">
           <span class="tally__dot tally__dot--snitch"></span>
           <span class="tally__label">Snitched</span>
-          <span class="tally__value" id="count-snitch"><%= tally.snitch %></span>
+          <span class="tally__value" id="count-snitch"><%= resolution ? resolution.snitch : 0 %></span>
         </div>
         <div class="tally__item">
           <span class="tally__label">Total</span>
-          <span class="tally__value" id="count-total"><%= tally.total %></span>
+          <span class="tally__value" id="count-total"><%= resolution ? resolution.total : 0 %></span>
         </div>
       </div>
-      <p class="field__hint field__hint--center">Updates live as others decide.</p>
     </div>
 
-    <p class="waiting <%= showResults ? 'is-hidden' : '' %>" id="waiting">
-      Results are hidden for now. Leave this page open &mdash; they will appear
-      here the moment they are released.
+    <p class="waiting <%= resolution ? 'is-hidden' : '' %>" id="waiting">
+      Everyone decides in the dark &mdash; no results are shown while the round
+      is running. Leave this page open and the outcome will appear here the
+      moment voting closes.
     </p>
   </div>
 </main>

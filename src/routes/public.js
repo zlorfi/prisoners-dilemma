@@ -57,13 +57,10 @@ router.get('/d/:slug', slugLimiter, ensureVoterToken, loadDilemma, (req, res) =>
       title: dilemma.title,
       dilemma,
       vote: existingVote,
-      showResults: !!dilemma.show_results,
-      tally: dilemmas.getTally(dilemma.id),
-      // Only resolves once the admin closes voting; gated behind the same
-      // reveal toggle as the counts so the admin controls the big moment.
-      resolution: dilemma.show_results
-        ? dilemmas.getResolution(dilemma)
-        : null,
+      // Nothing is shown to voters until the round is closed and resolved.
+      // Live counts would leak how others are choosing, and the card's whole
+      // premise is that everyone decides in the dark.
+      resolution: dilemmas.getResolution(dilemma),
     });
   }
 
@@ -196,19 +193,16 @@ router.get('/d/:slug/stream', slugLimiter, loadDilemma, (req, res) => {
       res.write(`data: ${JSON.stringify({ type: 'deleted' })}\n\n`);
       return;
     }
-    const reveal = !!current.show_results;
-    const resolution = reveal ? dilemmas.getResolution(current) : null;
+    // getResolution returns null until the round is closed, so an in-progress
+    // round sends no counts whatsoever — there is nothing here to infer from.
+    const resolution = dilemmas.getResolution(current);
     res.write(
       `data: ${JSON.stringify({
         type: payload.type ?? 'update',
         status: current.status,
-        showResults: reveal,
-        tally: reveal ? dilemmas.getTally(dilemma.id) : null,
         // Strip the per-player breakdown: voters get the verdict and their
         // own damage number, never the full list of who chose what.
-        resolution: resolution
-          ? { ...resolution, players: undefined }
-          : null,
+        resolution: resolution ? { ...resolution, players: undefined } : null,
       })}\n\n`,
     );
   };

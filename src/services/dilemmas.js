@@ -19,6 +19,10 @@ const stmt = {
   `),
   bySlug: db.prepare('SELECT * FROM dilemmas WHERE slug = ?'),
   byId: db.prepare('SELECT * FROM dilemmas WHERE id = ?'),
+  maxId: db.prepare('SELECT MAX(id) AS id FROM dilemmas'),
+  titleExists: db.prepare(
+    'SELECT 1 FROM dilemmas WHERE title = ? COLLATE NOCASE',
+  ),
   listAll: db.prepare(`
     SELECT d.*,
            COUNT(v.id)                                          AS total,
@@ -58,7 +62,6 @@ const stmt = {
   setStatus: db.prepare(
     'UPDATE dilemmas SET status = ?, closed_at = ? WHERE id = ?',
   ),
-  setShowResults: db.prepare('UPDATE dilemmas SET show_results = ? WHERE id = ?'),
   deleteDilemma: db.prepare('DELETE FROM dilemmas WHERE id = ?'),
   resetVotes: db.prepare('DELETE FROM votes WHERE dilemma_id = ?'),
   clearReservations: db.prepare(
@@ -185,7 +188,24 @@ function createDilemma({ title, description, createdBy }) {
 
 function cleanTitle(title) {
   const value = String(title ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
-  return value || 'Untitled dilemma';
+  return value || nextDefaultTitle();
+}
+
+/**
+ * Default title for a new dilemma: "Game X", where X is the highest existing
+ * id plus one.
+ *
+ * Ids are not reused after a delete, so this is a running counter rather than
+ * a count of current rows. It is only a suggested label though — nothing keys
+ * off it, and the admin is free to overwrite it. If that exact name is already
+ * taken (easy to hit by typing "Game 3" by hand) we walk forward to the first
+ * free number so two rooms don't end up sharing a label.
+ */
+function nextDefaultTitle() {
+  const maxId = stmt.maxId.get()?.id ?? 0;
+  let n = maxId + 1;
+  while (stmt.titleExists.get(`Game ${n}`)) n += 1;
+  return `Game ${n}`;
 }
 
 function cleanDescription(description) {
@@ -195,12 +215,6 @@ function cleanDescription(description) {
 function setStatus(dilemmaId, status) {
   const closedAt = status === 'closed' ? new Date().toISOString() : null;
   stmt.setStatus.run(status, closedAt, dilemmaId);
-  publishUpdate(dilemmaId, 'status');
-  return getById(dilemmaId);
-}
-
-function setShowResults(dilemmaId, show) {
-  stmt.setShowResults.run(show ? 1 : 0, dilemmaId);
   publishUpdate(dilemmaId, 'status');
   return getById(dilemmaId);
 }
@@ -231,7 +245,6 @@ function publishUpdate(dilemmaId, type = 'update') {
   events.publish(dilemmaId, {
     type,
     status: dilemma.status,
-    showResults: !!dilemma.show_results,
     ...getSnapshot(dilemmaId),
   });
 }
@@ -416,9 +429,9 @@ module.exports = {
   isNameTaken,
   listForAdmin,
   nameKey,
+  nextDefaultTitle,
   remainingNameCount,
   resetVotes,
-  setShowResults,
   setStatus,
   suggestName,
 };

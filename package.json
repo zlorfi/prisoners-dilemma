@@ -1,6 +1,6 @@
 {
   "name": "prisoners-dilemma",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "description": "Admin-managed prisoner's dilemma voting rooms with live results",
   "type": "commonjs",

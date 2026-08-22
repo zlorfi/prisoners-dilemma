@@ -1,0 +1,140 @@
+<%- include('../partials/head') %>
+<%- include('../partials/adminnav') %>
+
+<main class="shell">
+  <% if (justCreated) { %>
+    <div class="alert alert--ok">Dilemma created. Share the link below.</div>
+  <% } %>
+
+  <section class="card">
+    <div class="row row--between">
+      <div>
+        <p class="eyebrow">
+          <span class="badge badge--<%= dilemma.status %>" id="status-badge"><%= dilemma.status %></span>
+          <span class="live-dot" id="live-dot" title="Live connection"></span>
+          <span class="muted small" id="live-label">connecting…</span>
+        </p>
+        <h1><%= dilemma.title %></h1>
+        <% if (dilemma.description) { %>
+          <p class="muted"><%= dilemma.description %></p>
+        <% } %>
+      </div>
+      <a class="btn btn--ghost btn--sm" href="/admin">&larr; All dilemmas</a>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Share this link</h2>
+    <div class="share">
+      <div class="share__main">
+        <div class="field__row">
+          <input type="text" id="share-url" class="mono" value="<%= url %>" readonly>
+          <button type="button" class="btn" id="copy-url">Copy</button>
+        </div>
+        <p class="field__hint">
+          Short and unguessable. Anyone with the link can vote once.
+        </p>
+        <p class="field__hint">
+          Aliases left in the pool: <strong id="remaining-names"><%= remainingNames %></strong>
+        </p>
+      </div>
+      <% if (qr) { %>
+        <img class="share__qr" src="<%= qr %>" alt="QR code for the voting link" width="150" height="150">
+      <% } %>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Live results</h2>
+
+    <div class="stats">
+      <div class="stat stat--silence">
+        <span class="stat__value" id="count-silence"><%= tally.silence %></span>
+        <span class="stat__label">Stayed silent</span>
+      </div>
+      <div class="stat stat--snitch">
+        <span class="stat__value" id="count-snitch"><%= tally.snitch %></span>
+        <span class="stat__label">Snitched</span>
+      </div>
+      <div class="stat">
+        <span class="stat__value" id="count-total"><%= tally.total %></span>
+        <span class="stat__label">Total votes</span>
+      </div>
+    </div>
+
+    <div class="bar">
+      <div class="bar__seg bar__seg--silence" id="bar-silence" style="width:0%"></div>
+      <div class="bar__seg bar__seg--snitch"  id="bar-snitch"  style="width:0%"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row row--between">
+      <h2>Who voted <span class="pill" id="vote-count"><%= votes.length %></span></h2>
+      <a class="btn btn--ghost btn--sm" href="/admin/dilemmas/<%= dilemma.id %>/export.csv">Export CSV</a>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Alias</th><th>Choice</th><th>Submitted</th></tr>
+        </thead>
+        <tbody id="votes-body">
+          <% votes.forEach(function (v) { %>
+            <tr>
+              <td><%= v.display_name %></td>
+              <td><span class="badge badge--<%= v.choice %>"><%= v.choice %></span></td>
+              <td class="muted small"><%= v.created_at %> UTC</td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      <p class="muted empty <%= votes.length ? 'is-hidden' : '' %>" id="votes-empty">
+        No votes yet. They will appear here the instant somebody submits.
+      </p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Controls</h2>
+    <div class="controls">
+      <form method="post" action="/admin/dilemmas/<%= dilemma.id %>/status">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="status" value="<%= dilemma.status === 'open' ? 'closed' : 'open' %>">
+        <button type="submit" class="btn">
+          <%= dilemma.status === 'open' ? 'Close voting' : 'Reopen voting' %>
+        </button>
+      </form>
+
+      <form method="post" action="/admin/dilemmas/<%= dilemma.id %>/results">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="show" value="<%= dilemma.show_results ? '0' : '1' %>">
+        <button type="submit" class="btn">
+          <%= dilemma.show_results ? 'Hide results from voters' : 'Reveal results to voters' %>
+        </button>
+      </form>
+
+      <form method="post" action="/admin/dilemmas/<%= dilemma.id %>/reset"
+            onsubmit="return confirm('Delete all votes for this dilemma? This cannot be undone.');">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="btn btn--warn">Reset votes</button>
+      </form>
+
+      <form method="post" action="/admin/dilemmas/<%= dilemma.id %>/delete"
+            onsubmit="return confirm('Delete this dilemma and every vote in it? This cannot be undone.');">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="btn btn--danger">Delete dilemma</button>
+      </form>
+    </div>
+    <p class="field__hint">
+      Voters see aggregate counts only, and only while &ldquo;reveal results&rdquo; is on.
+      The alias list above is never exposed to them.
+    </p>
+  </section>
+</main>
+
+<script
+  src="/static/js/admin.js"
+  data-stream="/admin/dilemmas/<%= dilemma.id %>/stream"
+  defer></script>
+<%- include('../partials/foot') %>

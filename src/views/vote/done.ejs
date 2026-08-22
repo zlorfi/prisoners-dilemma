@@ -1,0 +1,59 @@
+<%- include('../partials/head') %>
+<main class="shell shell--narrow">
+  <div class="card card--center">
+    <% if (vote) { %>
+      <div class="glyph glyph--<%= vote.choice %>">
+        <%- vote.choice === 'silence' ? '&#129296;' : '&#128227;' %>
+      </div>
+      <p class="eyebrow">Decision locked in</p>
+      <h1><%= vote.choice === 'silence' ? 'You stayed silent' : 'You snitched' %></h1>
+      <p class="muted">
+        Recorded as <strong><%= vote.display_name %></strong>.
+        Your answer is final &mdash; this link will not let you vote again.
+      </p>
+    <% } else { %>
+      <div class="glyph">&#128274;</div>
+      <p class="eyebrow"><%= dilemma.title %></p>
+      <h1>Voting is closed</h1>
+      <p class="muted">This round has ended and no further answers are accepted.</p>
+    <% } %>
+
+    <div id="results" class="results <%= showResults ? '' : 'is-hidden' %>">
+      <h2 class="results__title">Where everyone landed</h2>
+
+      <div class="bar">
+        <div class="bar__seg bar__seg--silence" id="bar-silence" style="width:0%"></div>
+        <div class="bar__seg bar__seg--snitch"  id="bar-snitch"  style="width:0%"></div>
+      </div>
+
+      <div class="tally">
+        <div class="tally__item">
+          <span class="tally__dot tally__dot--silence"></span>
+          <span class="tally__label">Silent</span>
+          <span class="tally__value" id="count-silence"><%= tally.silence %></span>
+        </div>
+        <div class="tally__item">
+          <span class="tally__dot tally__dot--snitch"></span>
+          <span class="tally__label">Snitched</span>
+          <span class="tally__value" id="count-snitch"><%= tally.snitch %></span>
+        </div>
+        <div class="tally__item">
+          <span class="tally__label">Total</span>
+          <span class="tally__value" id="count-total"><%= tally.total %></span>
+        </div>
+      </div>
+      <p class="field__hint field__hint--center">Updates live as others decide.</p>
+    </div>
+
+    <p class="waiting <%= showResults ? 'is-hidden' : '' %>" id="waiting">
+      Results are hidden for now. Leave this page open &mdash; they will appear
+      here the moment they are released.
+    </p>
+  </div>
+</main>
+
+<script
+  src="/static/js/results.js"
+  data-stream="/d/<%= dilemma.slug %>/stream"
+  defer></script>
+<%- include('../partials/foot') %>

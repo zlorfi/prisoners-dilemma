@@ -1,0 +1,84 @@
+<%- include('../partials/head') %>
+<main class="shell shell--narrow">
+  <div class="card">
+    <p class="eyebrow">You have been picked up for questioning</p>
+    <h1><%= dilemma.title %></h1>
+
+    <% if (dilemma.description) { %>
+      <p class="lede"><%= dilemma.description %></p>
+    <% } else { %>
+      <p class="lede">
+        Your accomplice is in the next room, facing the same choice.
+        Stay quiet and you both do well &mdash; if they hold too.
+        Talk, and you walk while they take the fall. If you both talk, you both lose.
+      </p>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert--error" role="alert"><%= error %></div>
+    <% } %>
+
+    <% if (poolExhausted) { %>
+      <div class="alert alert--warn">
+        Every alias is taken. Please type a name of your own.
+      </div>
+    <% } %>
+
+    <form method="post" action="/d/<%= dilemma.slug %>" id="vote-form" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <label class="field">
+        <span class="field__label">Your alias</span>
+        <div class="field__row">
+          <input
+            type="text"
+            name="name"
+            id="name"
+            value="<%= values.name %>"
+            maxlength="40"
+            autocomplete="off"
+            autocapitalize="words"
+            spellcheck="false"
+            required
+            placeholder="e.g. Tony Montana">
+          <button type="button" class="btn btn--icon" id="reroll" title="Give me another name" aria-label="Suggest another name">&#8635;</button>
+        </div>
+        <span class="field__hint">
+          Prefilled for you. Each alias can only be used once per round &mdash; edit it if you like.
+        </span>
+      </label>
+
+      <fieldset class="choices">
+        <legend class="field__label">Your decision</legend>
+
+        <label class="choice choice--silence">
+          <input type="radio" name="choice" value="silence" <%= values.choice === 'silence' ? 'checked' : '' %> required>
+          <span class="choice__body">
+            <span class="choice__icon">&#129296;</span>
+            <span class="choice__title">Stay silent</span>
+            <span class="choice__desc">Say nothing. Protect your partner and hope they do the same.</span>
+          </span>
+        </label>
+
+        <label class="choice choice--snitch">
+          <input type="radio" name="choice" value="snitch" <%= values.choice === 'snitch' ? 'checked' : '' %>>
+          <span class="choice__body">
+            <span class="choice__icon">&#128227;</span>
+            <span class="choice__title">Snitch</span>
+            <span class="choice__desc">Give them up. Walk free &mdash; if they kept quiet.</span>
+          </span>
+        </label>
+      </fieldset>
+
+      <button type="submit" class="btn btn--primary btn--block" id="submit">
+        Confirm my decision
+      </button>
+      <p class="field__hint field__hint--center">
+        You only get one shot. This cannot be changed afterwards.
+      </p>
+    </form>
+  </div>
+</main>
+
+<script src="/static/js/vote.js" defer></script>
+<%- include('../partials/foot') %>

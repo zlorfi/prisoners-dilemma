@@ -1,0 +1,42 @@
+<%- include('../partials/head') %>
+<%- include('../partials/adminnav') %>
+
+<main class="shell shell--narrow">
+  <section class="card">
+    <h1>Change password</h1>
+    <p class="muted">Signed in as <strong><%= admin.username %></strong>.</p>
+
+    <% if (error) { %>
+      <div class="alert alert--error" role="alert"><%= error %></div>
+    <% } %>
+    <% if (notice) { %>
+      <div class="alert alert--ok"><%= notice %></div>
+    <% } %>
+
+    <form method="post" action="/admin/account/password">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <label class="field">
+        <span class="field__label">Current password</span>
+        <input type="password" name="current" autocomplete="current-password" required>
+      </label>
+
+      <label class="field">
+        <span class="field__label">New password</span>
+        <input type="password" name="next" autocomplete="new-password"
+               minlength="8" required>
+        <span class="field__hint">At least 8 characters.</span>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Repeat new password</span>
+        <input type="password" name="confirm" autocomplete="new-password"
+               minlength="8" required>
+      </label>
+
+      <button type="submit" class="btn btn--primary">Update password</button>
+      <p class="field__hint">You will be signed out and need to log in again.</p>
+    </form>
+  </section>
+</main>
+<%- include('../partials/foot') %>

@@ -1,0 +1,12 @@
+<header class="topbar">
+  <a class="topbar__brand" href="/admin">&#9878; Dilemma admin</a>
+  <nav class="topbar__nav">
+    <a href="/admin">Dilemmas</a>
+    <a href="/admin/account">Account</a>
+    <span class="topbar__user"><%= admin.username %></span>
+    <form method="post" action="/admin/logout" class="inline">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" class="btn btn--ghost btn--sm">Sign out</button>
+    </form>
+  </nav>
+</header>

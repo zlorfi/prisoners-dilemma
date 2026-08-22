@@ -1,0 +1,180 @@
+# Prisoner's Dilemma
+
+An admin creates a "dilemma" room and shares a short, unguessable link.
+Everyone who opens the link picks **stay silent** or **snitch** under a
+randomly assigned gangster alias. The admin dashboard updates live as votes
+land.
+
+- Node 22 · Express · EJS · SQLite (`better-sqlite3`) · Server-Sent Events
+- One vote per browser, one alias per round
+- No build step, no frontend framework, no external services
+
+---
+
+## Quick start (Docker)
+
+```bash
+cp .env.example .env       # edit ADMIN_PASSWORD, or leave it blank
+docker compose up --build
+```
+
+Open <http://localhost:3000/admin> and sign in.
+
+If you left `ADMIN_PASSWORD` empty, the generated password is printed **once**
+on first boot:
+
+```bash
+docker compose logs app | grep -A4 "ADMIN ACCOUNT CREATED"
+```
+
+---
+
+## Development
+
+```bash
+npm install
+npm run dev          # node --watch, restarts on change
+```
+
+Runs on <http://localhost:3000> with the database at `./data/dilemma.sqlite`.
+
+Useful overrides:
+
+```bash
+PORT=4000 DATA_DIR=./tmp ADMIN_PASSWORD=devpass npm run dev
+```
+
+To start over from a clean slate, delete the data directory and restart —
+the schema and admin account are recreated automatically.
+
+---
+
+## How it works
+
+**Admin** (`/admin`) — create a dilemma, share the link or QR code, watch
+results stream in. You can close voting, reveal results to participants,
+reset votes, export a CSV, or delete the room.
+
+**Participant** (`/d/<slug>`) — sees the briefing, an alias prefilled from a
+pool of ~240 pop-culture gangsters (editable, or reroll with ↻), and the two
+choices. After confirming, the page locks and shows their decision.
+
+**One vote per person** is enforced by a signed, http-only cookie plus a
+unique index on `(dilemma_id, voter_token)`. A second unique index on
+`(dilemma_id, name_key)` guarantees no two people share an alias — names are
+normalised, so `Tony Montana` and `  tony   MONTANA ` collide as intended.
+
+> This stops casual double voting. It does **not** stop someone who clears
+> cookies or opens a private window — appropriate for a workshop or party
+> game, not for anything binding. The admin's alias list makes duplicates
+> visible anyway.
+
+Slugs are 8 characters from a 30-character alphabet with look-alikes
+(`0/O`, `1/l/I`) removed: ~6.5 × 10¹¹ combinations, short enough to type off
+a slide, and rate limited at 60 requests/minute against enumeration.
+
+---
+
+## Production deployment
+
+### 1. Configure
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Set it to |
+| --- | --- |
+| `ADMIN_USERNAME` | your admin login |
+| `ADMIN_PASSWORD` | a strong password, **or** leave blank to auto-generate |
+| `SESSION_SECRET` | `openssl rand -hex 32` — pin this, don't let it drift |
+| `PUBLIC_ORIGIN` | `https://dilemma.example.com` (used for links and QR codes) |
+| `TRUST_PROXY` | `1` when behind nginx / Traefik / Caddy |
+| `COOKIE_SECURE` | `1` — required once you're on HTTPS |
+| `HOST_PORT` | host port to publish, defaults to `3000` |
+
+`SESSION_SECRET` signs both admin sessions and voter cookies. If it changes,
+everyone is logged out **and** voter cookies stop verifying, which lets people
+vote a second time. Set it explicitly in production. (If you don't, one is
+generated and persisted in the volume, which is fine as long as the volume
+survives.)
+
+### 2. Run
+
+```bash
+docker compose up -d --build
+docker compose logs -f app
+```
+
+The container runs as the unprivileged `node` user with
+`no-new-privileges`, and ships a healthcheck on `/healthz`.
+
+### 3. Put TLS in front
+
+The app speaks plain HTTP and expects a reverse proxy to terminate TLS.
+SSE needs buffering off — the app sends `X-Accel-Buffering: no`, but set it
+explicitly if your proxy ignores that:
+
+```nginx
+server {
+    server_name dilemma.example.com;
+    listen 443 ssl http2;
+    # ssl_certificate ... (certbot or similar)
+
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+
+        # keep the live results flowing
+        proxy_buffering    off;
+        proxy_cache        off;
+        proxy_read_timeout 1h;
+    }
+}
+```
+
+With TLS live, make sure `COOKIE_SECURE=1` and `TRUST_PROXY=1` are set,
+then `docker compose up -d` to apply.
+
+### Backups
+
+Everything lives in the `dilemma-data` volume.
+
+```bash
+# back up
+docker compose exec app \
+  node -e "require('better-sqlite3')('/data/dilemma.sqlite').backup('/data/backup.sqlite')" \
+  && docker compose cp app:/data/backup.sqlite ./backup.sqlite
+
+# restore
+docker compose cp ./backup.sqlite app:/data/dilemma.sqlite && docker compose restart app
+```
+
+Use the online `.backup` above rather than copying the file directly — the
+database runs in WAL mode, so a raw copy can be inconsistent.
+
+### Upgrading
+
+```bash
+git pull && docker compose up -d --build
+```
+
+The schema is created with `CREATE TABLE IF NOT EXISTS` on boot; the data
+volume is untouched by a rebuild.
+
+---
+
+## Notes
+
+- **Scaling**: state is a single SQLite file and the SSE bus is in-process, so
+  run exactly one container. That comfortably handles a room full of people.
+  Multiple replicas would need Redis pub/sub and a shared database.
+- **Changing the alias pool**: edit `src/lib/names.js`. Duplicates are removed
+  automatically on load.
+- **Rate limits**: login 10 / 15 min, votes 15 / min, page loads 60 / min,
+  all per IP. Set `TRUST_PROXY=1` or every request looks like it comes from
+  the proxy.

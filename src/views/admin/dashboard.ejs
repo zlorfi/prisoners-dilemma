@@ -1,0 +1,69 @@
+<%- include('../partials/head') %>
+<%- include('../partials/adminnav') %>
+
+<main class="shell">
+  <section class="card">
+    <h1>New dilemma</h1>
+    <p class="muted">
+      Creates a room with its own short, unguessable link you can share.
+    </p>
+    <form method="post" action="/admin/dilemmas" class="form-grid">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <label class="field">
+        <span class="field__label">Title</span>
+        <input type="text" name="title" maxlength="120" required
+               placeholder="Team offsite &mdash; round 1">
+      </label>
+
+      <label class="field">
+        <span class="field__label">Briefing <span class="muted">(optional)</span></span>
+        <textarea name="description" rows="3" maxlength="1000"
+                  placeholder="Shown to participants above the two choices. Leave empty for the classic framing."></textarea>
+      </label>
+
+      <button type="submit" class="btn btn--primary">Create dilemma</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h1>Your dilemmas <span class="pill"><%= dilemmas.length %></span></h1>
+
+    <% if (!dilemmas.length) { %>
+      <p class="muted">Nothing here yet. Create your first dilemma above.</p>
+    <% } else { %>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Link</th>
+              <th class="num">Silent</th>
+              <th class="num">Snitched</th>
+              <th class="num">Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% dilemmas.forEach(function (d) { %>
+              <tr>
+                <td>
+                  <a class="link-strong" href="/admin/dilemmas/<%= d.id %>"><%= d.title %></a>
+                  <div class="muted small"><%= d.created_at %> UTC</div>
+                </td>
+                <td><code class="code">/d/<%= d.slug %></code></td>
+                <td class="num" data-live="silence-<%= d.id %>"><%= d.silence %></td>
+                <td class="num" data-live="snitch-<%= d.id %>"><%= d.snitch %></td>
+                <td class="num strong" data-live="total-<%= d.id %>"><%= d.total %></td>
+                <td>
+                  <span class="badge badge--<%= d.status %>"><%= d.status %></span>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</main>
+<%- include('../partials/foot') %>

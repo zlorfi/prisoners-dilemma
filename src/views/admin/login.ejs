@@ -1,0 +1,31 @@
+<%- include('../partials/head') %>
+<main class="shell shell--narrow">
+  <div class="card">
+    <div class="glyph glyph--sm">&#9878;</div>
+    <h1>Admin login</h1>
+
+    <% if (error) { %>
+      <div class="alert alert--error" role="alert"><%= error %></div>
+    <% } %>
+
+    <form method="post" action="/admin/login">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="next" value="<%= next %>">
+
+      <label class="field">
+        <span class="field__label">Username</span>
+        <input type="text" name="username" value="<%= username %>"
+               autocomplete="username" required autofocus>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Password</span>
+        <input type="password" name="password"
+               autocomplete="current-password" required>
+      </label>
+
+      <button type="submit" class="btn btn--primary btn--block">Sign in</button>
+    </form>
+  </div>
+</main>
+<%- include('../partials/foot') %>

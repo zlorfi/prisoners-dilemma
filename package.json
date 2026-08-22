@@ -1,0 +1,23 @@
+{
+  "name": "prisoners-dilemma",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Admin-managed prisoner's dilemma voting rooms with live results",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "cookie-parser": "^1.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "qrcode": "^1.5.4"
+  }
+}

@@ -1,0 +1,12 @@
+<%- include('partials/head') %>
+<main class="shell shell--narrow">
+  <div class="card card--center">
+    <div class="glyph">!</div>
+    <h1><%= title %></h1>
+    <p class="muted"><%= message %></p>
+    <% if (typeof backLink !== 'undefined' && backLink) { %>
+      <p><a class="btn btn--ghost" href="<%= backLink %>">Go back</a></p>
+    <% } %>
+  </div>
+</main>
+<%- include('partials/foot') %>

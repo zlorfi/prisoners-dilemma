@@ -1,12 +1,7 @@
 services:
   app:
-    # Pinned by scripts/release.sh. The server only needs this file and a
-    # .env — no source checkout, no local build.
-    # To build from source instead, uncomment the block below and run
-    # `docker compose up -d --build`.
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    # Tag is pinned by scripts/release.sh on each release.
+    # The server needs only this file and a .env — no checkout, no build.
     image: ghcr.io/zlorfi/prisoners-dilemma:latest
     container_name: prisoners-dilemma
     restart: unless-stopped
@@ -32,7 +27,8 @@ services:
       NAME_RESERVATION_MINUTES: "${NAME_RESERVATION_MINUTES:-45}"
     labels:
       - traefik.enable=true
-      - traefik.docker.network=traefik
+      # Must match the network below, or Traefik may resolve the wrong IP.
+      - traefik.docker.network=traefik-network
       - traefik.http.routers.prisoners-dilemma.rule=Host(`pd.zlor.fi`)
       - traefik.http.routers.prisoners-dilemma.entrypoints=websecure
       - traefik.http.routers.prisoners-dilemma.service=prisoners-dilemma

@@ -142,7 +142,11 @@ function getVoteByToken(dilemmaId, voterToken) {
  */
 function getResolution(dilemma) {
   if (!dilemma || dilemma.status !== 'closed') return null;
-  return resolve(getVotes(dilemma.id));
+  const votes = getVotes(dilemma.id);
+  // A closed room with nothing in it has no verdict to show. Without this a
+  // freshly reset dilemma would render an empty "0 damage" result card.
+  if (votes.length === 0) return null;
+  return resolve(votes);
 }
 
 /** Everything an admin view or SSE payload needs, in one shot. */
@@ -201,10 +205,17 @@ function setShowResults(dilemmaId, show) {
   return getById(dilemmaId);
 }
 
+/**
+ * Wipe every vote and start the round over.
+ *
+ * This also reopens the room: a reset dilemma that stayed closed would be a
+ * dead end — no votes, no verdict, and nobody able to submit anything.
+ */
 function resetVotes(dilemmaId) {
   db.transaction(() => {
     stmt.resetVotes.run(dilemmaId);
     stmt.clearReservations.run(dilemmaId);
+    stmt.setStatus.run('open', null, dilemmaId);
   })();
   publishUpdate(dilemmaId, 'reset');
 }

@@ -88,11 +88,19 @@
     if (el.silence) el.silence.textContent = tally.silence || 0;
     if (el.snitch) el.snitch.textContent = tally.snitch || 0;
     if (el.total) el.total.textContent = total;
+    // setProperty on a custom property is CSP-safe; assigning style.width
+    // directly would be blocked by `style-src 'self'`.
     if (el.barSilence) {
-      el.barSilence.style.width = (total ? ((tally.silence || 0) / total) * 100 : 0) + '%';
+      el.barSilence.style.setProperty(
+        '--pct',
+        (total ? ((tally.silence || 0) / total) * 100 : 0) + '%',
+      );
     }
     if (el.barSnitch) {
-      el.barSnitch.style.width = (total ? ((tally.snitch || 0) / total) * 100 : 0) + '%';
+      el.barSnitch.style.setProperty(
+        '--pct',
+        (total ? ((tally.snitch || 0) / total) * 100 : 0) + '%',
+      );
     }
   }
 

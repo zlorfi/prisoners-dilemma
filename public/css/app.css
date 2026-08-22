@@ -300,7 +300,14 @@ input[readonly] { color: var(--muted); }
   border-radius: 999px;
   overflow: hidden;
 }
-.bar__seg { transition: width .45s cubic-bezier(.4, 0, .2, 1); }
+/* Width is driven by --pct, which the scripts set with style.setProperty().
+   Setting a custom property that way is not an inline style attribute, so it
+   does not trip `style-src 'self'` in the CSP. Defaults to 0 so a bar with no
+   data renders empty rather than full. */
+.bar__seg {
+  width: var(--pct, 0%);
+  transition: width .45s cubic-bezier(.4, 0, .2, 1);
+}
 .bar__seg--silence { background: var(--silence); }
 .bar__seg--snitch  { background: var(--snitch); }
 
@@ -437,6 +444,7 @@ input[readonly] { color: var(--muted); }
 }
 
 .empty { padding: 1rem .2rem 0; font-size: .88rem; }
+.flush { margin: 0; }
 
 /* --------------------------------------------------------- badges, misc. */
 

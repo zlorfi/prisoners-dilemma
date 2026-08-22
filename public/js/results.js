@@ -55,8 +55,10 @@
 
     var silencePct = total ? ((tally.silence || 0) / total) * 100 : 0;
     var snitchPct = total ? ((tally.snitch || 0) / total) * 100 : 0;
-    if (el.barSilence) el.barSilence.style.width = silencePct + '%';
-    if (el.barSnitch) el.barSnitch.style.width = snitchPct + '%';
+    // setProperty on a custom property is CSP-safe; assigning style.width
+    // directly would be blocked by `style-src 'self'`.
+    if (el.barSilence) el.barSilence.style.setProperty('--pct', silencePct + '%');
+    if (el.barSnitch) el.barSnitch.style.setProperty('--pct', snitchPct + '%');
   }
 
   function setVisible(show) {

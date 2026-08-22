@@ -36,8 +36,12 @@ services:
       - traefik.http.routers.prisoners-dilemma.tls=true
       - traefik.http.routers.prisoners-dilemma.tls.certresolver=letsencrypt-cloudflare
     volumes:
-      # Named volume keeps the SQLite database across rebuilds.
-      - dilemma-data:/data
+      # SQLite lives next to this compose file, so a backup is a plain file
+      # copy. The directory must exist and be writable by uid 1000 (the
+      # container's `node` user) before the first start:
+      #   mkdir -p dilemma-data && sudo chown -R 1000:1000 dilemma-data
+      # Otherwise Docker creates it as root and the app exits with EACCES.
+      - ./dilemma-data:/data
     healthcheck:
       test:
         - CMD
@@ -57,6 +61,3 @@ networks:
   traefik-network:
     external: true
     name: traefik-network
-
-volumes:
-  dilemma-data:

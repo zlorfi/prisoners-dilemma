@@ -1,5 +1,6 @@
 node_modules/
 data/
+dilemma-data/
 .env
 .DS_Store
 npm-debug.log*

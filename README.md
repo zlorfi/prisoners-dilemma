@@ -126,6 +126,12 @@ source checkout and nothing is built there.
 mkdir -p ~/prisoners-dilemma && cd ~/prisoners-dilemma
 curl -O https://raw.githubusercontent.com/zlorfi/prisoners-dilemma/main/docker-compose.yml
 curl -o .env https://raw.githubusercontent.com/zlorfi/prisoners-dilemma/main/.env.example
+
+# The database directory must be writable by uid 1000 (the container's
+# `node` user). Create it yourself — if Docker creates it on first start it
+# will be owned by root and the app will not come up.
+mkdir -p dilemma-data
+sudo chown -R 1000:1000 dilemma-data
 ```
 
 ### 1. Configure
@@ -192,20 +198,28 @@ then `docker compose up -d` to apply.
 
 ### Backups
 
-Everything lives in the `dilemma-data` volume.
+Everything lives in `./dilemma-data/` next to the compose file.
 
 ```bash
-# back up
+# back up (writes dilemma-data/backup.sqlite, then copies it out)
 docker compose exec app node -e \
-  "require('better-sqlite3')('/data/dilemma.sqlite').backup('/data/backup.sqlite').then(()=>console.log('ok'))" \
-  && docker compose cp app:/data/backup.sqlite ./backup.sqlite
+  "require('better-sqlite3')('/data/dilemma.sqlite').backup('/data/backup.sqlite').then(()=>console.log('ok'))"
+cp dilemma-data/backup.sqlite ./backup-$(date +%F).sqlite
 
 # restore
-docker compose cp ./backup.sqlite app:/data/dilemma.sqlite && docker compose restart app
+docker compose down
+cp ./backup-2026-01-01.sqlite dilemma-data/dilemma.sqlite
+sudo chown 1000:1000 dilemma-data/dilemma.sqlite
+docker compose up -d
 ```
 
-Use the online `.backup` above rather than copying the file directly — the
-database runs in WAL mode, so a raw copy can be inconsistent.
+Use the online `.backup` above rather than copying `dilemma.sqlite` straight
+out of the directory — the database runs in WAL mode, so a raw copy of a
+running database can be inconsistent. (Copying it while the app is stopped is
+fine.)
+
+Restoring a file you created elsewhere resets its ownership, hence the
+`chown` — without it the app cannot write to the database it just restored.
 
 ### Upgrading
 
@@ -223,6 +237,29 @@ volume is untouched by an upgrade.
 
 To roll back, fetch the compose file from an earlier tag and repeat — old
 image tags stay in GHCR.
+
+---
+
+## Troubleshooting
+
+**Container exits immediately with `EACCES ... /data/.session-secret`**
+
+The `./dilemma-data` directory is not writable by uid 1000. This happens when
+Docker auto-created it as root on first start:
+
+```bash
+docker compose down
+sudo chown -R 1000:1000 dilemma-data
+docker compose up -d
+```
+
+This only bites on Linux. Docker Desktop on macOS remaps ownership for bind
+mounts, so the same compose file works locally without the `chown`.
+
+**Everyone hits the rate limit at once** — `TRUST_PROXY` is not `1`, so every
+request appears to come from Traefik's IP.
+
+**Share links say `http://`** — set `PUBLIC_ORIGIN=https://pd.zlor.fi`.
 
 ---
 

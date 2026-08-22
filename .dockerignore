@@ -1,6 +1,9 @@
 node_modules
 npm-debug.log*
+# SQLite data: `data` is the dev default (DATA_DIR), `dilemma-data` is the
+# bind mount used by docker-compose. Never ship a database into an image.
 data
+dilemma-data
 .env
 .git
 .gitignore

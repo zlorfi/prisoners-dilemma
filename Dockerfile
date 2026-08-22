@@ -26,6 +26,7 @@ RUN if [ -f package-lock.json ]; then \
 # Runtime stage
 ###############################################################################
 FROM node:22-bookworm-slim AS runtime
+LABEL org.opencontainers.image.source=https://github.com/zlorfi/prisoners-dilemma
 
 ENV NODE_ENV=production \
     PORT=3000 \

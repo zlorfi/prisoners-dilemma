@@ -78,7 +78,10 @@ command -v docker >/dev/null || die "docker not found"
 docker buildx version >/dev/null 2>&1 || die "docker buildx not available"
 docker info >/dev/null 2>&1 || die "docker daemon not running"
 command -v git >/dev/null || die "git not found"
-ok "docker and git present"
+# The app reads its version out of the baked-in package.json, so bumping it is
+# part of producing a correct image, not an optional cosmetic step.
+command -v npm >/dev/null || die "npm not found (needed to bump package.json)"
+ok "docker, git and npm present"
 
 if [ -n "$(git status --porcelain)" ]; then
   git status --short | sed 's/^/    /'
@@ -129,6 +132,33 @@ if ! echo "$TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin >/dev/n
 fi
 ok "logged in as $GH_USER (via $TOKEN_SOURCE)"
 
+# --- version bump -----------------------------------------------------------
+#
+# This MUST happen before the build: the footer renders the version from the
+# package.json that gets copied into the image. Bumping afterwards ships an
+# image that reports the previous version (as :1.0.5 did).
+
+step "Setting package.json version to $VERSION"
+
+npm pkg set version="$VERSION" >/dev/null
+# Keep the lockfile's root version in step so `npm ci` stays reproducible.
+npm install --package-lock-only --ignore-scripts >/dev/null 2>&1 \
+  || warn "could not refresh package-lock.json"
+
+BUILT_VERSION="$(node -p "require('./package.json').version")"
+[ "$BUILT_VERSION" = "$VERSION" ] \
+  || die "package.json says $BUILT_VERSION after the bump, expected $VERSION"
+ok "package.json at $VERSION"
+
+# Leave no half-applied bump behind if a later step fails.
+restore_version() {
+  if [ "${RELEASE_DONE:-0}" -eq 0 ]; then
+    warn "release aborted - reverting package.json/package-lock.json"
+    git checkout -- package.json package-lock.json 2>/dev/null || true
+  fi
+}
+trap restore_version EXIT
+
 # --- build and push ---------------------------------------------------------
 
 step "Building ${IMAGE}:${VERSION} for ${PLATFORMS}"
@@ -161,6 +191,8 @@ if [ "$DRY_RUN" -eq 1 ]; then
   warn "dry run: building without pushing"
   docker buildx build "${BUILD_ARGS[@]}" .
   ok "build succeeded"
+  # restore_version runs on exit and undoes the bump, so a dry run stays
+  # side-effect free.
   step "Dry run complete - nothing pushed, committed or tagged"
   exit 0
 fi
@@ -182,8 +214,10 @@ step "Pinning $VERSION in docker-compose.yml"
 
 # Only the image line changes; everything else in the file is left alone.
 # BSD and GNU sed disagree about -i, so write to a temp file and move it.
+# The EXIT trap also keeps the version-revert, so a failure here does not
+# leave a bumped package.json behind.
 TMP="$(mktemp)"
-trap 'rm -f "$TMP"' EXIT
+trap 'rm -f "$TMP"; restore_version' EXIT
 sed -E "s|^([[:space:]]*image:[[:space:]]*).*$|\1${IMAGE}:${VERSION}|" \
   docker-compose.yml > "$TMP"
 
@@ -191,7 +225,7 @@ if ! grep -q "${IMAGE}:${VERSION}" "$TMP"; then
   die "failed to rewrite the image line in docker-compose.yml"
 fi
 mv "$TMP" docker-compose.yml
-trap - EXIT
+trap restore_version EXIT
 
 docker compose config >/dev/null 2>&1 || die "resulting docker-compose.yml is invalid"
 ok "image: ${IMAGE}:${VERSION}"
@@ -200,15 +234,14 @@ ok "image: ${IMAGE}:${VERSION}"
 
 step "Committing and tagging"
 
-# package.json is the source of truth for the version; keep it in step.
-if command -v npm >/dev/null 2>&1; then
-  npm pkg set version="$VERSION" >/dev/null
-  git add package.json
-fi
-
-git add docker-compose.yml
+# package.json was already bumped before the build, so it only needs staging
+# here — the commit records exactly what went into the image.
+git add package.json package-lock.json docker-compose.yml
 git commit -q -m "Release ${TAG}" -m "Image: ${IMAGE}:${VERSION}"
 git tag -a "$TAG" -m "Release ${TAG}"
+
+# Past this point the bump is committed; the EXIT trap must not revert it.
+RELEASE_DONE=1
 ok "committed and tagged $TAG"
 
 step "Pushing to origin"

@@ -40,8 +40,21 @@ function resolveSessionSecret() {
   return generated;
 }
 
+/**
+ * package.json ships with the runtime image (see Dockerfile), so this is a
+ * safe single source of truth for the displayed version.
+ */
+function resolveVersion() {
+  try {
+    return require('../package.json').version || 'dev';
+  } catch {
+    return 'dev';
+  }
+}
+
 module.exports = {
   env: process.env.NODE_ENV || 'development',
+  version: resolveVersion(),
   port: int(process.env.PORT, 3000),
   dataDir,
   databaseFile: path.join(dataDir, 'dilemma.sqlite'),

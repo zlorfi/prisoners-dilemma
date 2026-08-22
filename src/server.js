@@ -16,6 +16,8 @@ const app = express();
 
 if (config.trustProxy) app.set('trust proxy', true);
 
+app.locals.version = config.version;
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.disable('x-powered-by');

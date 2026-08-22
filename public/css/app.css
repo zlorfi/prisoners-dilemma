@@ -91,6 +91,14 @@ a  { color: var(--accent); }
   font-size: .78rem;
   padding: 1.25rem;
 }
+.footer__version {
+  opacity: .7;
+  font-variant-numeric: tabular-nums;
+}
+.footer__version::before {
+  content: "·";
+  margin: 0 .4em;
+}
 
 .eyebrow {
   text-transform: uppercase;

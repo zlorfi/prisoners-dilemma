@@ -11,21 +11,22 @@ land.
 
 ---
 
-## Quick start (Docker)
+## Quick start
 
 ```bash
-cp .env.example .env       # edit ADMIN_PASSWORD, or leave it blank
-docker compose up --build
+npm install
+ADMIN_PASSWORD=devpass npm run dev
 ```
 
-Open <http://localhost:3000/admin> and sign in.
+Open <http://localhost:3000/admin> and sign in as `admin` / `devpass`.
 
-If you left `ADMIN_PASSWORD` empty, the generated password is printed **once**
-on first boot:
+If you leave `ADMIN_PASSWORD` unset, a password is generated and printed
+**once** on first boot — look for `ADMIN ACCOUNT CREATED` in the output.
 
-```bash
-docker compose logs app | grep -A4 "ADMIN ACCOUNT CREATED"
-```
+> `docker-compose.yml` is written for the **server**: it pulls a published
+> image, publishes no ports, and joins Traefik's external network. It will not
+> come up on a laptop unchanged. Use `npm run dev` locally, or see
+> [Running the container locally](#running-the-container-locally).
 
 ---
 
@@ -46,6 +47,15 @@ PORT=4000 DATA_DIR=./tmp ADMIN_PASSWORD=devpass npm run dev
 
 To start over from a clean slate, delete the data directory and restart —
 the schema and admin account are recreated automatically.
+
+### Running the container locally
+
+To exercise the actual image without Traefik:
+
+```bash
+docker build -t prisoners-dilemma:dev .
+docker run --rm -p 3000:3000 -e ADMIN_PASSWORD=devpass prisoners-dilemma:dev
+```
 
 ---
 
@@ -80,13 +90,47 @@ a slide, and rate limited at 60 requests/minute against enumeration.
 
 ---
 
+## Releasing
+
+`scripts/release.sh` builds the image, pushes it to GHCR, pins the version in
+`docker-compose.yml`, then commits and tags.
+
+```bash
+./scripts/release.sh 1.2.3            # full release
+./scripts/release.sh 1.2.3 --dry-run  # build only, no push/commit/tag
+```
+
+It refuses to run on a dirty tree, if the git tag exists, or if that image tag
+is already published — released versions stay immutable.
+
+**Credentials.** Pushing needs `write:packages`, which `gh auth login` does not
+grant by default. Either:
+
+```bash
+export GHCR_TOKEN=ghp_...                       # classic PAT with write:packages
+gh auth refresh --scopes write:packages,read:packages   # or extend the gh token
+```
+
+`GHCR_TOKEN` takes precedence when set.
+
+**Cross-compiling.** The image is always built for `linux/amd64`, so releasing
+from an Apple Silicon Mac produces something the server can actually run. This
+uses a `docker-container` buildx builder, created automatically on first use.
+
 ## Production deployment
+
+The server needs only two files — `docker-compose.yml` and `.env`. There is no
+source checkout and nothing is built there.
+
+```bash
+mkdir -p ~/prisoners-dilemma && cd ~/prisoners-dilemma
+curl -O https://raw.githubusercontent.com/zlorfi/prisoners-dilemma/main/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/zlorfi/prisoners-dilemma/main/.env.example
+```
 
 ### 1. Configure
 
-```bash
-cp .env.example .env
-```
+Edit `.env`:
 
 | Variable | Set it to |
 | --- | --- |
@@ -107,7 +151,8 @@ survives.)
 ### 2. Run
 
 ```bash
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 docker compose logs -f app
 ```
 
@@ -164,12 +209,20 @@ database runs in WAL mode, so a raw copy can be inconsistent.
 
 ### Upgrading
 
+Release a new version from your workstation (`./scripts/release.sh 1.2.3`),
+then on the server pull the updated compose file and restart:
+
 ```bash
-git pull && docker compose up -d --build
+cd ~/prisoners-dilemma
+curl -O https://raw.githubusercontent.com/zlorfi/prisoners-dilemma/v1.2.3/docker-compose.yml
+docker compose pull && docker compose up -d
 ```
 
 The schema is created with `CREATE TABLE IF NOT EXISTS` on boot; the data
-volume is untouched by a rebuild.
+volume is untouched by an upgrade.
+
+To roll back, fetch the compose file from an earlier tag and repeat — old
+image tags stay in GHCR.
 
 ---
 

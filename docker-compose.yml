@@ -6,8 +6,12 @@ services:
     image: prisoners-dilemma:latest
     container_name: prisoners-dilemma
     restart: unless-stopped
-    ports:
-      - "${HOST_PORT:-3000}:3000"
+    # No ports published: Traefik reaches the container over the proxy network.
+    # Uncomment to expose it directly on the host for debugging.
+    # ports:
+    #   - "${HOST_PORT:-3000}:3000"
+    networks:
+      - traefik-network
     environment:
       NODE_ENV: production
       PORT: "3000"
@@ -16,10 +20,21 @@ services:
       # Leave unset in .env to get a generated password printed to the logs.
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
       SESSION_SECRET: "${SESSION_SECRET:-}"
-      PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:-}"
-      TRUST_PROXY: "${TRUST_PROXY:-0}"
-      COOKIE_SECURE: "${COOKIE_SECURE:-0}"
+      # Behind Traefik with TLS these three must be set for correct links,
+      # real client IPs in the rate limiter, and Secure cookies.
+      PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:-https://pd.zlor.fi}"
+      TRUST_PROXY: "${TRUST_PROXY:-1}"
+      COOKIE_SECURE: "${COOKIE_SECURE:-1}"
       NAME_RESERVATION_MINUTES: "${NAME_RESERVATION_MINUTES:-45}"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.prisoners-dilemma.rule=Host(`pd.zlor.fi`)
+      - traefik.http.routers.prisoners-dilemma.entrypoints=websecure
+      - traefik.http.routers.prisoners-dilemma.service=prisoners-dilemma
+      - traefik.http.services.prisoners-dilemma.loadbalancer.server.port=3000
+      - traefik.http.routers.prisoners-dilemma.tls=true
+      - traefik.http.routers.prisoners-dilemma.tls.certresolver=letsencrypt-cloudflare
     volumes:
       # Named volume keeps the SQLite database across rebuilds.
       - dilemma-data:/data
@@ -35,6 +50,13 @@ services:
       start_period: 8s
     security_opt:
       - no-new-privileges:true
+
+networks:
+  # The network Traefik already runs on. `external: true` means compose joins
+  # the existing one rather than creating a second, isolated network.
+  traefik-network:
+    external: true
+    name: traefik-network
 
 volumes:
   dilemma-data:

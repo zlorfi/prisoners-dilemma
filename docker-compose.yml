@@ -1,9 +1,13 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: prisoners-dilemma:latest
+    # Pinned by scripts/release.sh. The server only needs this file and a
+    # .env — no source checkout, no local build.
+    # To build from source instead, uncomment the block below and run
+    # `docker compose up -d --build`.
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: ghcr.io/zlorfi/prisoners-dilemma:latest
     container_name: prisoners-dilemma
     restart: unless-stopped
     # No ports published: Traefik reaches the container over the proxy network.

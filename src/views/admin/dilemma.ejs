@@ -44,6 +44,39 @@
     </div>
   </section>
 
+  <section class="card verdict-card <%= resolution ? '' : 'is-hidden' %>" id="verdict-card">
+    <p class="eyebrow">Resolution</p>
+    <h2 class="verdict__headline" id="verdict-headline">
+      <%= resolution ? resolution.headline : '' %>
+    </h2>
+    <p class="muted" id="verdict-explanation">
+      <%= resolution ? resolution.explanation : '' %>
+    </p>
+
+    <div class="damage-split">
+      <div class="damage-split__item damage-split__item--silence">
+        <span class="damage-split__value" id="dmg-silence"><%= resolution ? resolution.damage.silence : 0 %></span>
+        <span class="damage-split__label">to each who stayed silent</span>
+      </div>
+      <div class="damage-split__item damage-split__item--snitch">
+        <span class="damage-split__value" id="dmg-snitch"><%= resolution ? resolution.damage.snitch : 0 %></span>
+        <span class="damage-split__label">to each who snitched</span>
+      </div>
+      <div class="damage-split__item">
+        <span class="damage-split__value" id="dmg-total"><%= resolution ? resolution.totalDamage : 0 %></span>
+        <span class="damage-split__label">total damage dealt</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card <%= resolution ? 'is-hidden' : '' %>" id="pending-note">
+    <p class="muted small" style="margin:0">
+      Damage resolves once you close the voting &mdash; that is the signal that
+      every opponent has chosen. Use <strong>Reveal results</strong> to show the
+      verdict to the players.
+    </p>
+  </section>
+
   <section class="card">
     <h2>Live results</h2>
 
@@ -77,13 +110,16 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Alias</th><th>Choice</th><th>Submitted</th></tr>
+          <tr><th>Alias</th><th>Choice</th><th class="num">Damage</th><th>Submitted</th></tr>
         </thead>
         <tbody id="votes-body">
           <% votes.forEach(function (v) { %>
             <tr>
               <td><%= v.display_name %></td>
               <td><span class="badge badge--<%= v.choice %>"><%= v.choice %></span></td>
+              <td class="num strong">
+                <%= resolution ? resolution.damage[v.choice] : '—' %>
+              </td>
               <td class="muted small"><%= v.created_at %> UTC</td>
             </tr>
           <% }); %>
@@ -115,13 +151,13 @@
       </form>
 
       <form method="post" action="/admin/dilemmas/<%= dilemma.id %>/reset"
-            onsubmit="return confirm('Delete all votes for this dilemma? This cannot be undone.');">
+            data-confirm="Delete all votes for this dilemma? This cannot be undone.">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn--warn">Reset votes</button>
       </form>
 
       <form method="post" action="/admin/dilemmas/<%= dilemma.id %>/delete"
-            onsubmit="return confirm('Delete this dilemma and every vote in it? This cannot be undone.');">
+            data-confirm="Delete this dilemma and every vote in it? This cannot be undone.">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn--danger">Delete dilemma</button>
       </form>

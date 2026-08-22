@@ -59,6 +59,11 @@ router.get('/d/:slug', slugLimiter, ensureVoterToken, loadDilemma, (req, res) =>
       vote: existingVote,
       showResults: !!dilemma.show_results,
       tally: dilemmas.getTally(dilemma.id),
+      // Only resolves once the admin closes voting; gated behind the same
+      // reveal toggle as the counts so the admin controls the big moment.
+      resolution: dilemma.show_results
+        ? dilemmas.getResolution(dilemma)
+        : null,
     });
   }
 
@@ -191,12 +196,19 @@ router.get('/d/:slug/stream', slugLimiter, loadDilemma, (req, res) => {
       res.write(`data: ${JSON.stringify({ type: 'deleted' })}\n\n`);
       return;
     }
+    const reveal = !!current.show_results;
+    const resolution = reveal ? dilemmas.getResolution(current) : null;
     res.write(
       `data: ${JSON.stringify({
         type: payload.type ?? 'update',
         status: current.status,
-        showResults: !!current.show_results,
-        tally: current.show_results ? dilemmas.getTally(dilemma.id) : null,
+        showResults: reveal,
+        tally: reveal ? dilemmas.getTally(dilemma.id) : null,
+        // Strip the per-player breakdown: voters get the verdict and their
+        // own damage number, never the full list of who chose what.
+        resolution: resolution
+          ? { ...resolution, players: undefined }
+          : null,
       })}\n\n`,
     );
   };

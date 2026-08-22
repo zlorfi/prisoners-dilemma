@@ -329,6 +329,87 @@ input[readonly] { color: var(--muted); }
   padding-top: 1.1rem;
 }
 
+/* --------------------------------------------------------------- verdict */
+
+.verdict {
+  margin-top: 1.5rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.verdict__headline {
+  font-size: 1.5rem;
+  letter-spacing: -.02em;
+  margin: .2rem 0 .8rem;
+}
+
+.verdict-card {
+  border-color: rgba(251, 191, 36, .35);
+  background:
+    linear-gradient(180deg, rgba(251, 191, 36, .06), transparent 60%),
+    var(--card);
+}
+
+/* Big single number shown to a player: their own damage. */
+.damage {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .1rem;
+  padding: 1rem 2.2rem;
+  margin: .4rem 0 1rem;
+  border: 1px solid rgba(248, 113, 113, .4);
+  background: rgba(248, 113, 113, .1);
+  border-radius: var(--radius);
+}
+.damage__value {
+  font-size: 3.2rem;
+  font-weight: 780;
+  line-height: 1;
+  color: var(--snitch);
+  font-variant-numeric: tabular-nums;
+}
+.damage--none .damage__value { color: var(--silence); }
+.damage--none {
+  border-color: rgba(74, 222, 128, .4);
+  background: rgba(74, 222, 128, .1);
+}
+.damage__label {
+  font-size: .74rem;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--muted);
+}
+
+.damage-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: .8rem;
+  margin-top: 1.1rem;
+}
+.damage-split__item {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: .9rem 1rem;
+  text-align: center;
+}
+.damage-split__value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 720;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.damage-split__item--silence .damage-split__value { color: var(--silence); }
+.damage-split__item--snitch  .damage-split__value { color: var(--snitch); }
+.damage-split__label {
+  font-size: .74rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
 /* ----------------------------------------------------------------- table */
 
 .table-wrap { overflow-x: auto; }

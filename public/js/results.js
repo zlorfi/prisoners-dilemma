@@ -15,7 +15,36 @@
     total: document.getElementById('count-total'),
     barSilence: document.getElementById('bar-silence'),
     barSnitch: document.getElementById('bar-snitch'),
+    verdict: document.getElementById('verdict'),
+    headline: document.getElementById('verdict-headline'),
+    explanation: document.getElementById('verdict-explanation'),
+    damageBox: document.getElementById('damage-box'),
+    damageValue: document.getElementById('damage-value'),
   };
+
+  // Which side this player picked, so we can show their own damage.
+  var myChoice = script.getAttribute('data-choice') || null;
+
+  function paintVerdict(resolution) {
+    if (!el.verdict) return;
+
+    if (!resolution) {
+      el.verdict.classList.add('is-hidden');
+      return;
+    }
+
+    el.verdict.classList.remove('is-hidden');
+    if (el.headline) el.headline.textContent = resolution.headline;
+    if (el.explanation) el.explanation.textContent = resolution.explanation;
+
+    if (el.damageValue && myChoice && resolution.damage) {
+      var mine = resolution.damage[myChoice] || 0;
+      el.damageValue.textContent = mine;
+      if (el.damageBox) {
+        el.damageBox.classList.toggle('damage--none', mine === 0);
+      }
+    }
+  }
 
   function paint(tally) {
     if (!tally) return;
@@ -33,6 +62,14 @@
   function setVisible(show) {
     if (results) results.classList.toggle('is-hidden', !show);
     if (waiting) waiting.classList.toggle('is-hidden', show);
+  }
+
+  // Server-rendered damage figure, so the first paint has the right colour.
+  if (el.damageBox && el.damageValue) {
+    el.damageBox.classList.toggle(
+      'damage--none',
+      Number(el.damageValue.textContent) === 0,
+    );
   }
 
   // Render whatever was server-rendered before the socket opens.
@@ -61,6 +98,7 @@
     }
     setVisible(!!data.showResults);
     if (data.showResults) paint(data.tally);
+    paintVerdict(data.showResults ? data.resolution : null);
   };
 
   // EventSource reconnects on its own; nothing to do but stay quiet.

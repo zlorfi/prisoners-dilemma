@@ -23,17 +23,26 @@ app.disable('x-powered-by');
 app.use(
   helmet({
     contentSecurityPolicy: {
+      // Helmet's defaults include `upgrade-insecure-requests`, which makes the
+      // browser re-request every subresource over https. On a plain-HTTP
+      // deployment that breaks the CSS and JS outright (Safari enforces it on
+      // any origin; Chrome exempts localhost, which is why it only shows up in
+      // one of them). Only emit it once we are actually serving HTTPS.
+      useDefaults: false,
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'"],
+        scriptSrcAttr: ["'none'"],
         // QR codes are rendered as inline data: URLs.
         imgSrc: ["'self'", 'data:'],
+        fontSrc: ["'self'", 'data:'],
         connectSrc: ["'self'"],
         formAction: ["'self'"],
         frameAncestors: ["'none'"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
+        ...(config.cookieSecure ? { upgradeInsecureRequests: [] } : {}),
       },
     },
     // Everything is same-origin; the strictest COEP settings only get in the way.

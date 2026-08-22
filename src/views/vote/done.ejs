@@ -18,6 +18,26 @@
       <p class="muted">This round has ended and no further answers are accepted.</p>
     <% } %>
 
+    <div id="verdict" class="verdict <%= resolution ? '' : 'is-hidden' %>">
+      <p class="eyebrow">Prisoner&rsquo;s Dilemma resolves</p>
+      <h2 class="verdict__headline" id="verdict-headline">
+        <%= resolution ? resolution.headline : '' %>
+      </h2>
+
+      <% if (vote) { %>
+        <div class="damage" id="damage-box">
+          <span class="damage__value" id="damage-value">
+            <%= resolution ? resolution.damage[vote.choice] : 0 %>
+          </span>
+          <span class="damage__label">damage to you</span>
+        </div>
+      <% } %>
+
+      <p class="muted small" id="verdict-explanation">
+        <%= resolution ? resolution.explanation : '' %>
+      </p>
+    </div>
+
     <div id="results" class="results <%= showResults ? '' : 'is-hidden' %>">
       <h2 class="results__title">Where everyone landed</h2>
 
@@ -55,5 +75,6 @@
 <script
   src="/static/js/results.js"
   data-stream="/d/<%= dilemma.slug %>/stream"
+  <% if (vote) { %>data-choice="<%= vote.choice %>"<% } %>
   defer></script>
 <%- include('../partials/foot') %>

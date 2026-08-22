@@ -5,6 +5,7 @@ const config = require('../config');
 const { generateSlug } = require('../lib/slug');
 const { NAME_POOL, POOL_KEYS, nameKey, cleanName } = require('../lib/names');
 const { hashIp } = require('../lib/crypto');
+const { resolve } = require('../lib/resolution');
 const events = require('../lib/events');
 
 /* ------------------------------------------------------------------ *
@@ -132,12 +133,26 @@ function getVoteByToken(dilemmaId, voterToken) {
   return stmt.voteByToken.get(dilemmaId, voterToken) || null;
 }
 
+/**
+ * Damage resolution for a dilemma, or null while it is still open.
+ *
+ * The card resolves once every opponent has chosen. There is no fixed player
+ * count here, so closing the voting is what marks "all votes are in" — that
+ * keeps the result from flickering between branches as people trickle in.
+ */
+function getResolution(dilemma) {
+  if (!dilemma || dilemma.status !== 'closed') return null;
+  return resolve(getVotes(dilemma.id));
+}
+
 /** Everything an admin view or SSE payload needs, in one shot. */
 function getSnapshot(dilemmaId) {
+  const dilemma = getById(dilemmaId);
   return {
     tally: getTally(dilemmaId),
     votes: getVotes(dilemmaId),
     remainingNames: remainingNameCount(dilemmaId),
+    resolution: getResolution(dilemma),
   };
 }
 
@@ -382,6 +397,7 @@ module.exports = {
   deleteDilemma,
   getById,
   getBySlug,
+  getResolution,
   getSnapshot,
   getTally,
   getVoteByToken,

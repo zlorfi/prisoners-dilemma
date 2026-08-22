@@ -20,7 +20,17 @@
     statusBadge: document.getElementById('status-badge'),
     dot: document.getElementById('live-dot'),
     label: document.getElementById('live-label'),
+    verdictCard: document.getElementById('verdict-card'),
+    pendingNote: document.getElementById('pending-note'),
+    headline: document.getElementById('verdict-headline'),
+    explanation: document.getElementById('verdict-explanation'),
+    dmgSilence: document.getElementById('dmg-silence'),
+    dmgSnitch: document.getElementById('dmg-snitch'),
+    dmgTotal: document.getElementById('dmg-total'),
   };
+
+  // Latest damage split, so the vote table can show a per-player figure.
+  var currentDamage = null;
 
   /* ------------------------------------------------------------ copy link */
 
@@ -46,6 +56,21 @@
       }
     });
   }
+
+  /* ------------------------------------------------- destructive actions */
+
+  /* Confirmations live here rather than in an inline onsubmit="", which the
+     CSP (script-src-attr 'none') blocks. */
+  Array.prototype.forEach.call(
+    document.querySelectorAll('form[data-confirm]'),
+    function (form) {
+      form.addEventListener('submit', function (e) {
+        if (!window.confirm(form.getAttribute('data-confirm'))) {
+          e.preventDefault();
+        }
+      });
+    },
+  );
 
   /* --------------------------------------------------------------- render */
 
@@ -106,12 +131,19 @@
       badge.textContent = v.choice;
       choice.appendChild(badge);
 
+      var damage = document.createElement('td');
+      damage.className = 'num strong';
+      damage.textContent = currentDamage
+        ? currentDamage[v.choice]
+        : '\u2014';
+
       var when = document.createElement('td');
       when.className = 'muted small';
       when.textContent = v.created_at + ' UTC';
 
       tr.appendChild(name);
       tr.appendChild(choice);
+      tr.appendChild(damage);
       tr.appendChild(when);
       frag.appendChild(tr);
     });
@@ -119,6 +151,20 @@
     el.body.replaceChildren(frag);
     if (el.voteCount) el.voteCount.textContent = votes.length;
     if (el.empty) el.empty.classList.toggle('is-hidden', votes.length > 0);
+  }
+
+  function paintVerdict(resolution) {
+    currentDamage = resolution ? resolution.damage : null;
+
+    if (el.verdictCard) el.verdictCard.classList.toggle('is-hidden', !resolution);
+    if (el.pendingNote) el.pendingNote.classList.toggle('is-hidden', !!resolution);
+    if (!resolution) return;
+
+    if (el.headline) el.headline.textContent = resolution.headline;
+    if (el.explanation) el.explanation.textContent = resolution.explanation;
+    if (el.dmgSilence) el.dmgSilence.textContent = resolution.damage.silence;
+    if (el.dmgSnitch) el.dmgSnitch.textContent = resolution.damage.snitch;
+    if (el.dmgTotal) el.dmgTotal.textContent = resolution.totalDamage;
   }
 
   function paintStatus(data) {
@@ -160,6 +206,8 @@
     setConnection('live');
     paintStatus(data);
     paintTally(data.tally);
+    // Before paintVotes: the damage column reads from the current split.
+    paintVerdict(data.resolution);
     paintVotes(data.votes);
 
     if (data.type === 'reset') known = new Set();

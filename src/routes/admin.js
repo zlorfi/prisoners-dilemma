@@ -166,11 +166,19 @@ router.post('/dilemmas/:id/delete', loadDilemma, (req, res) => {
 /* CSV export — handy for keeping a record after a session. */
 router.get('/dilemmas/:id/export.csv', loadDilemma, (req, res) => {
   const rows = dilemmas.getVotes(req.dilemma.id);
+  const resolution = dilemmas.getResolution(req.dilemma);
   const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const csv = [
-    'name,choice,submitted_at',
+    'name,choice,damage,submitted_at',
     ...rows.map((r) =>
-      [r.display_name, r.choice, r.created_at].map(escape).join(','),
+      [
+        r.display_name,
+        r.choice,
+        resolution ? resolution.damage[r.choice] : '',
+        r.created_at,
+      ]
+        .map(escape)
+        .join(','),
     ),
   ].join('\n');
 

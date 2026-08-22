@@ -146,8 +146,8 @@ Everything lives in the `dilemma-data` volume.
 
 ```bash
 # back up
-docker compose exec app \
-  node -e "require('better-sqlite3')('/data/dilemma.sqlite').backup('/data/backup.sqlite')" \
+docker compose exec app node -e \
+  "require('better-sqlite3')('/data/dilemma.sqlite').backup('/data/backup.sqlite').then(()=>console.log('ok'))" \
   && docker compose cp app:/data/backup.sqlite ./backup.sqlite
 
 # restore

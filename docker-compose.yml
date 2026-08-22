@@ -2,7 +2,7 @@ services:
   app:
     # Tag is pinned by scripts/release.sh on each release.
     # The server needs only this file and a .env — no checkout, no build.
-    image: ghcr.io/zlorfi/prisoners-dilemma:latest
+    image: ghcr.io/zlorfi/prisoners-dilemma:1.0.1
     container_name: prisoners-dilemma
     restart: unless-stopped
     # No ports published: Traefik reaches the container over the proxy network.
